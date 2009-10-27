@@ -65,7 +65,9 @@ CPOpacityRequiresFilterFeature          = 1 << 24;
 CPInputTypeCanBeChangedFeature          = 1 << 25;
 CPHTML5DragAndDropSourceYOffBy1         = 1 << 26;
 
-CPSOPDisabledFromFileURLs               = 1 << 27;
+CPSOPDisabledFromFileURLs               = 1 << 27,
+
+CPHTML5GradientFeature                  = 1 << 28;
 
 var USER_AGENT                          = "",
     PLATFORM_ENGINE                     = CPUnknownBrowserEngine,
@@ -137,6 +139,9 @@ else if (USER_AGENT.indexOf("AppleWebKit/") != -1)
 
     if (USER_AGENT.indexOf("Chrome") === CPNotFound)
         PLATFORM_FEATURES |= CPSOPDisabledFromFileURLs;
+    
+    if (majorVersion >= 534 && minorVersion >=42)
+        PLATFORM_FEATURES |= CPHTML5GradientFeature;
 }
 
 // KHTML
@@ -160,6 +165,9 @@ else if (USER_AGENT.indexOf("Gecko") !== -1) // Must follow KHTML check.
 
     if (version < 3.0)
         PLATFORM_FEATURES |= CPJavaScriptMouseWheelValues_8_15;
+    
+    if (version >= 3.6)
+        PLATFORM_FEATURES |= CPHTML5GradientFeature;
 }
 
 // Feature Specific Checks

@@ -55,6 +55,7 @@
 @import "CPFont.j"
 @import "CPFontManager.j"
 @import "CPGeometry.j"
+@import "CPGradient.j"
 @import "CPGraphics.j"
 @import "CPImage.j"
 @import "CPImageView.j"

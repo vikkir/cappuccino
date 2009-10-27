@@ -91,7 +91,8 @@ var DOMElementPrototype         = nil,
     BackgroundVerticalThreePartImage    = 1,
     BackgroundHorizontalThreePartImage  = 2,
     BackgroundNinePartImage             = 3,
-    BackgroundTransparentColor          = 4;
+    BackgroundTransparentColor          = 4,
+    BackgroundGradientColor             = 5;
 #endif
 
 var CPViewFlags                     = { },
@@ -1431,7 +1432,7 @@ var CPViewFlags                     = { },
 
 #if PLATFORM(DOM)
     var patternImage = [_backgroundColor patternImage],
-        colorExists = _backgroundColor && ([_backgroundColor patternImage] || [_backgroundColor alphaComponent] > 0.0),
+        colorExists = _backgroundColor && (patternImage || [_backgroundColor alphaComponent] > 0.0),
         colorHasAlpha = colorExists && [_backgroundColor alphaComponent] < 1.0,
         supportsRGBA = CPFeatureIsCompatible(CPCSSRGBAFeature),
         colorNeedsDOMElement = colorHasAlpha && !supportsRGBA,
@@ -1446,6 +1447,11 @@ var CPViewFlags                     = { },
     {
         _backgroundType = BackgroundNinePartImage;
         amount = 9 - _DOMImageParts.length;
+    }
+    else if ([_backgroundColor isGradient])
+    {
+        _backgroundType = BackgroundGradientColor;
+        amount = 0;
     }
     else
     {
@@ -1491,6 +1497,11 @@ var CPViewFlags                     = { },
         }
         else
             _DOMElement.style.background = colorCSS;
+    }
+    else if (_backgroundType === BackgroundGradientColor)
+    {
+        var styleprop = (!CPFeatureIsCompatible(CPHTML5GradientFeature) && CPBrowserIsEngine(CPInternetExplorerBrowserEngine)) ? "filter" : "background";
+        _DOMElement.style[styleprop] = [_backgroundColor cssString];
     }
     else
     {

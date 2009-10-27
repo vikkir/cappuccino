@@ -69,6 +69,7 @@ var cachedBlackColor,
 
     CPImage     _patternImage;
     CPString    _cssString;
+    BOOL        _isGradient @accessors(readonly, getter=isGradient);
 }
 
 /*!
@@ -420,6 +421,7 @@ var cachedBlackColor,
     ];
 
     _cssString = aString;
+    _isGradient = NO;
 
     return self;
 }
@@ -440,6 +442,7 @@ var cachedBlackColor,
             parseInt(_components[1] * 255.0) + ", " +
             parseInt(_components[2] * 255.0) +
             (hasAlpha ?  (", " + _components[3]) : "") + ")";
+        _isGradient = NO;
     }
 
     return self;
@@ -455,6 +458,7 @@ var cachedBlackColor,
         _patternImage = anImage;
         _cssString = "url(\"" + [_patternImage filename] + "\")";
         _components = [0.0, 0.0, 0.0, 1.0];
+        _isGradient = NO;
     }
 
     return self;
