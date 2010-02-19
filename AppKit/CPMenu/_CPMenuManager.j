@@ -192,7 +192,7 @@ var SharedMenuManager = nil;
                     [CPEvent startPeriodicEventsAfterDelay:0.0 withPeriod:0.04];
             }
         }
-        else if (type === CPLeftMouseUp && ([anEvent timestamp] - _startTime > STICKY_TIME_INTERVAL))
+        else if (type === CPLeftMouseUp && ([anEvent timestamp] - _startTime > STICKY_TIME_INTERVAL / 1000))
             [trackingMenu cancelTracking];
     }
 
