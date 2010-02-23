@@ -343,6 +343,12 @@ var _CPTableColumnHeaderViewStringValueKey = @"_CPTableColumnHeaderViewStringVal
 
 - (void)_updateResizeCursor:(CPEvent)theEvent
 {
+    if (![_tableView allowsColumnResizing] || ![_tableView columnAutoresizingStyle])
+    {
+        [[CPCursor arrowCursor] set];
+        return;
+    }
+
     var mouseLocation = [self convertPoint:[theEvent locationInWindow] fromView:nil],    
         mouseOverLocation = CGPointMake(mouseLocation.x - 5, mouseLocation.y),
         overColumn = [self columnAtPoint:mouseOverLocation];
@@ -412,6 +418,9 @@ var _CPTableColumnHeaderViewStringValueKey = @"_CPTableColumnHeaderViewStringVal
 
 - (void)drawRect:(CGRect)aRect
 {
+    if (!_tableView)
+        return;
+
     var context = [[CPGraphicsContext currentContext] graphicsPort],
         exposedColumnIndexes = [_tableView columnIndexesInRect:aRect],
         columnsArray = [],
