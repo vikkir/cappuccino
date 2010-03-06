@@ -32,6 +32,7 @@
 #include "CFPropertyList.js"
 #include "CFDictionary.js"
 #include "CFData.js"
+#include "CFURL.js"
 #include "MarkedStream.js"
 #include "CFBundle.js"
 #include "StaticResource.js"
@@ -41,7 +42,7 @@
 #include "FileExecutable.js"
 #include "FileExecutableSearch.js"
 #include "Runtime.js"
-#if DEBUG
+#if defined(DEBUG) || defined(COMMONJS)
 #include "Debug.js"
 #endif
 #include "Bootstrap.js"
