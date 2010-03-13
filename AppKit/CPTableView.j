@@ -194,6 +194,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     SEL         _doubleAction;
     unsigned    _columnAutoResizingStyle;
 
+    int         _lastTrackedRowIndex;
     CGPoint     _originalMouseDownPoint;
     BOOL        _verticalMotionCanDrag;
     unsigned    _destinationDragStyle;
@@ -2154,10 +2155,12 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     }
 }
 
-- (void)_commitDataViewObjectValue:(CPTextView)sender
+- (void)_commitDataViewObjectValue:(id)sender
 {
     [_dataSource tableView:self setObjectValue:[sender objectValue] forTableColumn:sender.tableViewEditedColumnObj row:sender.tableViewEditedRowIndex];
-    [sender setEditable:NO];
+
+    if ([sender respondsToSelector:@selector(setEditable:)])
+        [sender setEditable:NO];
 }
 
 - (CPView)_newDataViewForRow:(CPInteger)aRow tableColumn:(CPTableColumn)aTableColumn
@@ -2652,8 +2655,11 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     }
 
     _isSelectingSession = YES;
-    if(row >= 0)
+    if(row >= 0 && row !== _lastTrackedRowIndex)
+    {
+        _lastTrackedRowIndex = row;
         [self _updateSelectionWithMouseAtRow:row];
+    }
 
     if ((_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_)
         && !_trackingPointMovedOutOfClickSlop)
