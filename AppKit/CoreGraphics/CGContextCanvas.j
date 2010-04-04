@@ -183,6 +183,8 @@ function CGContextDrawPath(aContext, aMode)
     
     if (aMode == kCGPathStroke || aMode == kCGPathFillStroke || aMode == kCGPathEOFillStroke)
         aContext.stroke();
+        
+    aContext.beginPath();
 }
 
 function CGContextFillRect(aContext, aRect)
