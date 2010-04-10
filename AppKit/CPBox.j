@@ -164,7 +164,6 @@ CPGrooveBorder  = 3;
     [aView setFrame:CGRectInset([self bounds], _contentMargin.width + _borderWidth, _contentMargin.height + _borderWidth)];
     [aView setAutoresizingMask:CPViewWidthSizable|CPViewHeightSizable];
     [self replaceSubview:_contentView with:aView];
-    [aView setAutoresizingMask:CPViewWidthSizable|CPViewHeightSizable];
     
     _contentView = aView;    
 }
