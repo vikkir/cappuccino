@@ -28,7 +28,6 @@
 @import "_CPCornerView.j"
 @import "CPScroller.j"
 
-
 CPTableViewColumnDidMoveNotification        = @"CPTableViewColumnDidMoveNotification";
 CPTableViewColumnDidResizeNotification      = @"CPTableViewColumnDidResizeNotification";
 CPTableViewSelectionDidChangeNotification   = @"CPTableViewSelectionDidChangeNotification";
@@ -866,7 +865,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     var view = context[rowIndex],
         selector = select ? @"setThemeState:" : @"unsetThemeState:";
 
-    [view performSelector:CPSelectorFromString(selector) withObject:CPThemeStateSelected];
+    [view performSelector:CPSelectorFromString(selector) withObject:CPThemeStateSelectedDataView];
 }
 
 - (void)_updateHighlightWithOldColumns:(CPIndexSet)oldColumns newColumns:(CPIndexSet)newColumns
@@ -896,7 +895,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         {
             var rowIndex = selectRows[i],
                 dataView = dataViewsInTableColumn[rowIndex];
-            [dataView unsetThemeState:CPThemeStateSelected];
+            [dataView unsetThemeState:CPThemeStateSelectedDataView];
         }
         
         if (_headerView)
@@ -917,7 +916,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         {
             var rowIndex = selectRows[i],
                 dataView = dataViewsInTableColumn[rowIndex];
-            [dataView setThemeState:CPThemeStateSelected];
+            [dataView setThemeState:CPThemeStateSelectedDataView];
         }
         if (_headerView)
         {
@@ -1025,12 +1024,44 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 /*
     * - preparedCellAtColumn:row:
 */
+
 //Editing Cells
-/*
-    * - editColumn:row:withEvent:select:
-    * - editedColumn
-    * - editedRow
+
+/*!
+    Edits the indicated row.
 */
+- (void)editColumn:(CPInteger)columnIndex row:(CPInteger)rowIndex withEvent:(CPEvent)theEvent select:(BOOL)flag
+{
+    if (![self isRowSelected:rowIndex])
+        [[CPException exceptionWithName:@"Error" reason:@"Attempt to edit row="+rowIndex+" when not selected." userInfo:nil] raise];
+
+    // TODO Do something with flag.
+
+    _editingCellIndex = CGPointMake(columnIndex, rowIndex);
+    [self reloadDataForRowIndexes:[CPIndexSet indexSetWithIndex:rowIndex]
+        columnIndexes:[CPIndexSet indexSetWithIndex:columnIndex]];
+}
+
+/*!
+    Returns the column of the currently edited cell, or -1 if none.
+*/
+- (CPInteger)editedColumn
+{
+    if (!_editingCellIndex)
+        return -1;
+    return _editingCellIndex.x;
+}
+
+/*!
+    Returns the row of the currently edited cell, or -1 if none.
+*/
+- (CPInteger)editedRow
+{
+    if (!_editingCellIndex)
+        return -1;
+    return _editingCellIndex.x;
+}
+
 //Setting Auxiliary Views
 /*
     * - setHeaderView:
@@ -1692,6 +1723,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         
     if (_allowsColumnSelection)
     {
+        [self _noteSelectionIsChanging];
         if (modifierFlags & CPCommandKeyMask)
         {
             if ([self isColumnSelected:clickedColumn])
@@ -1794,7 +1826,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     if (_headerView)
     {
         if (_currentHighlightedTableColumn != nil)
-            [[_currentHighlightedTableColumn headerView] unsetThemeState:CPThemeStateSelected];
+            [[_currentHighlightedTableColumn headerView] unsetThemeState:CPThemeStateSelectedDataView];
    
         if (aTableColumn != nil)
             [[aTableColumn headerView] setThemeState:CPThemeStateSelected];
@@ -2168,9 +2200,9 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
             [dataView setObjectValue:[self _objectValueForTableColumn:tableColumn row:row]];
 
             if (isColumnSelected || [self isRowSelected:row])
-                [dataView setThemeState:CPThemeStateSelected];
+                [dataView setThemeState:CPThemeStateSelectedDataView];
             else
-                [dataView unsetThemeState:CPThemeStateSelected];
+                [dataView unsetThemeState:CPThemeStateSelectedDataView];
 
             if (_implementedDelegateMethods & CPTableViewDelegate_tableView_willDisplayView_forTableColumn_row_)
                 [_delegate tableView:self willDisplayView:dataView forTableColumn:tableColumn row:row];
@@ -2454,7 +2486,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
 - (void)highlightSelectionInClipRect:(CGRect)aRect
 {
-    if (_selectionHighlightStyle === CPTableViewDraggingDestinationFeedbackStyleNone)
+    if (_selectionHighlightStyle === CPTableViewSelectionHighlightStyleNone)
         return;
 
     var context = [[CPGraphicsContext currentContext] graphicsPort],
@@ -2814,10 +2846,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
                         shouldEdit = [_delegate tableView:self shouldEditTableColumn:column row:rowIndex];
                     if (shouldEdit)
                     {
-                        _editingCellIndex = CGPointMake(columnIndex, rowIndex);
-                        [self reloadDataForRowIndexes:[CPIndexSet indexSetWithIndex:rowIndex]
-                            columnIndexes:[CPIndexSet indexSetWithIndex:columnIndex]];
-
+                        [self editColumn:columnIndex row:rowIndex withEvent:nil select:YES];
                         return;
                     }
                 }
