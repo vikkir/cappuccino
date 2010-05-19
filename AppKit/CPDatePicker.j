@@ -125,8 +125,8 @@ var firstWeekdayIsMonday = nil;
     if (self = [super initWithFrame:aFrame])
     {
         _datePickerMode = CPSingleDateMode;
-        _datePickerStyle = CPClockAndCalendarDatePickerStyle;
-        _datePickerElements = CPYearMonthDayDatePickerElementFlag;
+//        _datePickerStyle = CPClockAndCalendarDatePickerStyle;
+//        _datePickerElements = CPYearMonthDayDatePickerElementFlag;
         _timeInterval = 0;
         _minDate = [CPDate distantPast];
         _maxDate = [CPDate distantFuture];
@@ -208,6 +208,16 @@ var firstWeekdayIsMonday = nil;
     }
 
     [self _setDateValue:startDate timeInterval:timeInterval];
+}
+
+- (void)setObjectValue:(id)value
+{
+    [self setDateValue:value];    
+}
+
+- (void)mouseUp:(CPEvent)anEvent
+{
+    currentSelectionIndex = nil;
     [self _sendAction];
 }
 
@@ -229,12 +239,6 @@ var firstWeekdayIsMonday = nil;
         startSelectionIndex = currentSelectionIndex;
 
     [self _setDateValueFromIndex:startSelectionIndex toIndex:currentSelectionIndex];
-}
-
-- (void)mouseUp:(CPEvent)anEvent
-{
-    currentSelectionIndex = nil;
-    [self _sendAction];
 }
 
 - (void)keyDown:(CPEvent)anEvent
@@ -439,11 +443,10 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
 @implementation _CPDatePickerHeaderView : CPControl
 {
     CPTextField title;
-    id          prevButton @accessors(readonly);
-    id          nextButton @accessors(readonly);
+    CPControl   previousControl @accessors(readonly);
+    CPControl   nextControl @accessors(readonly);
     CPArray     dayLabels;
 
-    CPImage     headerBackgroundImage;
     CGGradient  _headerGradient;
 }
 
@@ -460,27 +463,21 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
 
         [self addSubview:title];
 
-        prevButton = [[_CPDatePickerHeaderArrowButton alloc] initWithFrame:CGRectMake(10, 9, 0, 0)];
-        var prevButtonImage = CPAppKitImage(@"datepicker-header-previous.png",CGSizeMake(15.0, 15.0));
-        [prevButton setValue:[CPColor colorWithPatternImage:prevButtonImage] forThemeAttribute:@"bezel-color"];
-        [prevButton setTag:-1];
-        [prevButton setAutoresizingMask:CPViewMaxXMargin];
-        [prevButton sizeToFit];
-        [self addSubview:prevButton];
+        previousControl = [[_CPDatePickerHeaderArrowControl alloc] initWithFrame:CGRectMake(10, 9, 10, 10)];
+        [previousControl setDirection:-1];
+        [previousControl setAutoresizingMask:CPViewMaxXMargin];
+        [self addSubview:previousControl];
 
-        nextButton = [[_CPDatePickerHeaderArrowButton alloc] initWithFrame:CGRectMake(CGRectGetMaxX([self bounds]) - 21, 9, 0, 0)];
-        var nextButtonImage = CPAppKitImage(@"datepicker-header-next.png",CGSizeMake(15.0, 15.0));
-        [nextButton setValue:[CPColor colorWithPatternImage:nextButtonImage] forThemeAttribute:@"bezel-color"];
-        [nextButton setTag:1];
-        [nextButton sizeToFit];
-        [nextButton setAutoresizingMask:CPViewMinXMargin];
-        [self addSubview:nextButton];
+        nextControl = [[_CPDatePickerHeaderArrowControl alloc] initWithFrame:CGRectMake(CGRectGetMaxX([self bounds]) - 21, 9, 10, 10)];
+        [nextControl setDirection:1];
+        [nextControl setAutoresizingMask:CPViewMinXMargin];
+        [self addSubview:nextControl];
 
-        [prevButton setTarget:datePicker];
-        [prevButton setAction:@selector(_slideMonth:)];
+        [previousControl setTarget:datePicker];
+        [previousControl setAction:@selector(_slideMonth:)];
 
-        [nextButton setTarget:datePicker];
-        [nextButton setAction:@selector(_slideMonth:)];
+        [nextControl setTarget:datePicker];
+        [nextControl setAction:@selector(_slideMonth:)];
 
         dayLabels = [CPArray array];
         var dayNames = ([CPDatePicker firstWeekdayIsMonday]) ? _dayNamesShort : _dayNamesShortUS;
@@ -514,9 +511,8 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
             
     // Arrows
     var buttonOrigin = CGSizeMake(5,5);
-    [prevButton setFrameOrigin:CGPointMake(buttonOrigin.width + 5, buttonOrigin.height)];
-
-    [nextButton setFrameOrigin:CGPointMake(width - 16 - buttonOrigin.width - 5, buttonOrigin.height)];
+    [previousControl setFrameOrigin:CGPointMake(buttonOrigin.width + 5, buttonOrigin.height)];
+    [nextControl setFrameOrigin:CGPointMake(width - 16 - buttonOrigin.width - 5, buttonOrigin.height)];
 
     // Weekday label
     var numberOfLabels = [dayLabels count],
@@ -591,8 +587,9 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
 @end
 
 
-@implementation _CPDatePickerHeaderArrowButton : CPButton 
+@implementation _CPDatePickerHeaderArrowControl : CPControl 
 {
+    CPInteger direction @accessors;
 }
 
 - (id)initWithFrame:(CGRect)aFrame
@@ -605,7 +602,65 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
     return self;
 }
 
+- (void)drawRect:(CGRect)aRect
+{
+    var bounds = [self bounds],
+        context = [[CPGraphicsContext currentContext] graphicsPort];
+
+    CGContextBeginPath(context);
+
+    CGContextTranslateCTM(context, CGRectGetWidth(bounds) / 2.0, CGRectGetHeight(bounds) / 2.0);
+    CGContextRotateCTM(context, - direction * Math.PI/2);
+    CGContextTranslateCTM(context, -CGRectGetWidth(bounds) / 2.0, -CGRectGetHeight(bounds) / 2.0);
+
+    // Center, but crisp.
+    CGContextTranslateCTM(context, FLOOR((CGRectGetWidth(bounds) - 9.0) / 2.0), FLOOR((CGRectGetHeight(bounds) - 8.0) / 2.0));
+
+    CGContextMoveToPoint(context, 0.0, 0.0);
+    CGContextAddLineToPoint(context, 9.0, 0.0);
+    CGContextAddLineToPoint(context, 4.5, 8.0);
+    CGContextAddLineToPoint(context, 0.0, 0.0);
+
+    CGContextClosePath(context);
+    
+    var isHighlighted = [self hasThemeState:CPThemeStateHighlighted];
+    var color = isHighlighted ? [CPColor blackColor] : [CPColor grayColor];
+    
+    CGContextSetFillColor(context, color);
+    CGContextFillPath(context);
+}
+
 @end
+
+/*
+ * LPCalendarView
+ * LPKit
+ *
+ * Created by Ludwig Pettersson on September 21, 2009.
+ *
+ * The MIT License
+ *
+ * Copyright (c) 2009 Ludwig Pettersson
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ */
 
 var immutableDistantFuture = [CPDate distantFuture];
 
@@ -653,16 +708,17 @@ var immutableDistantFuture = [CPDate distantFuture];
     if (![aDate isEqualToDate:immutableDistantFuture])
     {    
         // Reset the date to the first day of the month & midnight
-        [date resetToFirstDay];
+        date.setDate(1);
+        [date resetToMidnight];
     
         // There must be a better way to do this.
         _firstDay = [date copy];
-        [_firstDay resetToFirstDay];
+        _firstDay.setDate(1);
     
         previousMonth = new Date(_firstDay.getTime() - 86400000);
-        [previousMonth resetToFirstDay];
+        previousMonth.setDate(1);
         nextMonth = new Date(_firstDay.getTime() + (([date daysInMonth] + 1) * 86400000));
-        [nextMonth resetToFirstDay];
+        nextMonth.setDate(1);
     }
     
     [self reloadData];
@@ -907,7 +963,7 @@ var immutableDistantFuture = [CPDate distantFuture];
         [textField setValue:[CPColor colorWithWhite:0 alpha:0.3] forThemeAttribute:@"text-color" inState:CPThemeStateDisabled];
         disabledBezelColor = [CPColor clearColor];
 
-        _dayGradient = CGGradientCreateWithColorComponents(CGColorSpaceCreateDeviceRGB(), [185/255, 224/255, 246/255, 1, 131/255, 176/255, 201/255, 1], [0, 1], 3);
+        _dayGradient = CGGradientCreateWithColorComponents(CGColorSpaceCreateDeviceRGB(), [0, 0, 0, 0.3, 0, 0, 0, 0.1, 0, 0, 0, 0], [0,0.5,1], 3);
 
         [self addSubview:textField];
         [self setNeedsLayout];
@@ -1014,13 +1070,19 @@ var immutableDistantFuture = [CPDate distantFuture];
     
     //CGContextSaveGState(context);
     [color setFill];
-//    CGContextFillRect(context, bounds);
-    
-    if (state == CPThemeStateSelected)
-{
-    CGContextAddRect(context, bounds);
-    CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(0, 0), CGPointMake(0, CGRectGetHeight(bounds)), 0);
-}
+    CGContextFillRect(context, bounds);
+
+    if (state == CPThemeStateSelected || state == (CPThemeStateSelected | CPThemeStateHighlighted))
+    {     
+        CGContextAddRect(context, bounds);
+        CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(0, 0), CGPointMake(0, 6), 0);
+        CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(0, CGRectGetHeight(bounds)), CGPointMake(0, CGRectGetHeight(bounds) - 2), 0);
+
+        if (_isLeft)
+            CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(0, 0), CGPointMake(3, 0), 0);
+        if (_isRight)
+            CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(CGRectGetWidth(bounds), 0), CGPointMake(CGRectGetWidth(bounds) - 2, 0), 0);
+    }
     //CGContextRestoreGState(context);
 }
 
