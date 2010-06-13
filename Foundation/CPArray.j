@@ -20,11 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+@import "CPEnumerator.j"
+@import "CPException.j"
 @import "CPObject.j"
 @import "CPRange.j"
-@import "CPEnumerator.j"
 @import "CPSortDescriptor.j"
-@import "CPException.j"
 
 
 /* @ignore */
@@ -145,10 +145,10 @@
 {
     var i = 2,
         array = [[self alloc] init],
-        argument;
+        count = arguments.length;
 
-    for (; i < arguments.length && (argument = arguments[i]) != nil; ++i)
-        array.push(argument);
+    for (; i < count; ++i)
+        array.push(arguments[i]);
 
     return array;
 }
@@ -229,10 +229,10 @@
 {
     // The arguments array contains self and _cmd, so the first object is at position 2.
     var i = 2,
-        argument;
+        count = arguments.length;
 
-    for (; i < arguments.length && (argument = arguments[i]) != nil; ++i)
-        push(argument);
+    for (; i < count; ++i)
+        push(arguments[i]);
 
     return self;
 }
@@ -278,21 +278,18 @@
 
 /*!
     Returns the index of \c anObject in this array.
-    If the object is \c nil or not in the array,
+    If the object is not in the array,
     returns \c CPNotFound. It first attempts to find
-    a match using \c -isEqual:, then \c ==.
+    a match using \c -isEqual:, then \c ===.
     @param anObject the object to search for
 */
 - (int)indexOfObject:(id)anObject
 {
-    if (anObject === nil)
-        return CPNotFound;
-
     var i = 0,
         count = length;
 
     // Only use -isEqual: if our object is a CPObject.
-    if (anObject.isa)
+    if (anObject && anObject.isa)
     {
         for (; i < count; ++i)
             if ([self[i] isEqual:anObject])
@@ -305,7 +302,7 @@
     // Last resort, do a straight forward linear O(N) search.
     else
         for (; i < count; ++i)
-            if (self[i] == anObject)
+            if (self[i] === anObject)
                 return i;
 
     return CPNotFound;
@@ -314,21 +311,18 @@
 /*!
     Returns the index of \c anObject in the array
     within \c aRange. It first attempts to find
-    a match using \c -isEqual:, then \c ==.
+    a match using \c -isEqual:, then \c ===.
     @param anObject the object to search for
     @param aRange the range to search within
     @return the index of the object, or \c CPNotFound if it was not found.
 */
 - (int)indexOfObject:(id)anObject inRange:(CPRange)aRange
 {
-    if (anObject === nil)
-        return CPNotFound;
-
     var i = aRange.location,
         count = MIN(CPMaxRange(aRange), length);
 
     // Only use isEqual: if our object is a CPObject.
-    if (anObject.isa)
+    if (anObject && anObject.isa)
     {
         for (; i < count; ++i)
             if ([self[i] isEqual:anObject])
@@ -337,22 +331,19 @@
     // Last resort, do a straight forward linear O(N) search.
     else
         for (; i < count; ++i)
-            if (self[i] == anObject)
+            if (self[i] === anObject)
                 return i;
 
     return CPNotFound;
 }
 
 /*!
-    Returns the index of \c anObject in the array. The test for equality is done using only \c ==.
+    Returns the index of \c anObject in the array. The test for equality is done using only \c ===.
     @param anObject the object to search for
     @return the index of the object in the array. \c CPNotFound if the object is not in the array.
 */
 - (int)indexOfObjectIdenticalTo:(id)anObject
 {
-    if (anObject === nil)
-        return CPNotFound;
-
     // If indexOf exists, use it since it's probably
     // faster than anything we can implement.
     if (self.indexOf)
@@ -382,9 +373,6 @@
 */
 - (int)indexOfObjectIdenticalTo:(id)anObject inRange:(CPRange)aRange
 {
-    if (anObject === nil)
-        return CPNotFound;
-
     // If indexOf exists, use it since it's probably
     // faster than anything we can implement.
     if (self.indexOf)
@@ -460,7 +448,7 @@
 
 - (unsigned)_indexOfObject:(id)anObject sortedByFunction:(Function)aFunction context:(id)aContext
 {
-    if (!aFunction || anObject === undefined)
+    if (!aFunction)
         return CPNotFound;
 
     if (length === 0)
@@ -482,7 +470,7 @@
             last = mid - 1;
         else
         {
-            while (mid < length - 1 && aFunction(anObject, self[mid+1], aContext) == CPOrderedSame)
+            while (mid < length - 1 && aFunction(anObject, self[mid + 1], aContext) == CPOrderedSame)
                 mid++;
 
             return mid;
@@ -502,10 +490,11 @@
 */
 - (unsigned)indexOfObject:(id)anObject sortedByDescriptors:(CPArray)descriptors
 {
+    var count = [descriptors count];
+
     return [self indexOfObject:anObject sortedByFunction:function(lhs, rhs)
     {
         var i = 0,
-            count = [descriptors count],
             result = CPOrderedSame;
 
         while (i < count)
@@ -516,6 +505,28 @@
     }];
 }
 
+- (unsigned)insertObject:(id)anObject inArraySortedByDescriptors:(CPArray)descriptors
+{
+    var index = [self _insertObject:anObject sortedByFunction:function(lhs, rhs)
+    {
+        var i = 0,
+            count = [descriptors count],
+            result = CPOrderedSame;
+
+        while (i < count)
+            if((result = [descriptors[i++] compareObject:lhs withObject:rhs]) != CPOrderedSame)
+                return result;
+
+        return result;
+    } context:nil];
+
+    if (index < 0)
+        index = -result-1;
+
+    [self insertObject:anObject atIndex:index];
+    return index;
+}
+
 /*!
     Returns the last object in the array. If the array is empty, returns \c nil/
 */
@@ -523,7 +534,8 @@
 {
     var count = [self count];
 
-    if (!count) return nil;
+    if (!count)
+        return nil;
 
     return self[count - 1];
 }
@@ -697,12 +709,7 @@
 */
 - (CPArray)arrayByAddingObject:(id)anObject
 {
-    if (anObject === nil || anObject === undefined)
-        [CPException raise:CPInvalidArgumentException
-                    reason:"arrayByAddingObject: object can't be nil"];
-
     var array = [self copy];
-
     array.push(anObject);
 
     return array;
@@ -789,7 +796,7 @@
 */
 - (CPArray)sortedArrayUsingSelector:(SEL)aSelector
 {
-    var sorted = [self copy]
+    var sorted = [self copy];
 
     [sorted sortUsingSelector:aSelector];
 
@@ -909,7 +916,7 @@
 
 @end
 
-@implementation CPArray(CPMutableArray)
+@implementation CPArray (CPMutableArray)
 
 // Creating arrays
 /*!
@@ -987,14 +994,15 @@
 
 - (unsigned)insertObject:(id)anObject inArraySortedByDescriptors:(CPArray)descriptors
 {
+    var count = [descriptors count];
+
     var index = [self _indexOfObject:anObject sortedByFunction:function(lhs, rhs)
     {
         var i = 0,
-            count = [descriptors count],
             result = CPOrderedSame;
 
         while (i < count)
-            if ((result = [descriptors[i++] compareObject:lhs withObject:rhs]) != CPOrderedSame)
+            if((result = [descriptors[i++] compareObject:lhs withObject:rhs]) != CPOrderedSame)
                 return result;
 
         return result;
@@ -1207,10 +1215,11 @@
 
 - (CPArray)sortUsingDescriptors:(CPArray)descriptors
 {
+    var count = [descriptors count];
+
     sort(function(lhs, rhs)
     {
         var i = 0,
-            count = [descriptors count],
             result = CPOrderedSame;
 
         while (i < count)
