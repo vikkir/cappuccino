@@ -1,12 +1,13 @@
 /*
- * CPDatePicker.j
- * AppKit
+ * LPCalendarView
+ * LPKit
  *
- * Created by cacaodev on April 12, 2010.
+ * Created by Ludwig Pettersson on September 21, 2009.
+ * CPDatePicker methods by cacaodev on April 12, 2010.
  *
  * The MIT License
  *
- * Copyright (c) 2010 cacaodev
+ * Copyright (c) 2009 Ludwig Pettersson
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -50,8 +51,14 @@ var HEADER_HEIGHT = 37.0;
 var _monthNames = [@"January", @"February", @"March", @"April", @"May", @"June", @"July", @"August", @"September", @"October", @"November", @"December"],
     _dayNamesShort = [@"mon", @"tue", @"wed", @"thu", @"fri", @"sat", @"sun"],
     _dayNamesShortUS = [@"sun", @"mon", @"tue", @"wed", @"thu", @"fri", @"sat"];
-
+    
 var firstWeekdayIsMonday = nil;
+
+var GRADIENT_CALENDAR,
+    GRADIENT_DAY_SELECTED,
+    GRADIENT_DAY_HIGHLIGHTED,
+    COLOR_CALENDAR_GRID,
+    COLOR_STROKE_DAY_SELECTED;
 
 @implementation CPDate (CPDatePickerAdditions)
 
@@ -92,20 +99,20 @@ var firstWeekdayIsMonday = nil;
     CPView      headerView @accessors(readonly);
     CPView      holderView;    
     CPView      currentMonthView;
+    CPInteger   startSelectionIndex;
+    CPInteger   currentSelectionIndex;
+    CPArray     slideViews;
+    CPViewAnimation viewAnimation;
 
 // @public
     id          _delegate @accessors(property=delegate);
     CPColor     _backgroundColor @accessors(property=backgroundColor);
     CPColor     _textColor @accessors(property=textColor);
-    CPInteger   _timeInterval;
+    CPFont      _textFont @accessors(property=textFont);
+    CPInteger   _timeInterval @accessors(property=timeInterval);
     CPInteger   _datePickerMode @accessors(property=datePickerMode);
     CPDate      _minDate @accessors(property=minDate);
     CPDate      _maxDate @accessors(property=maxDate);
-
-    CPInteger   startSelectionIndex;
-    CPInteger   currentSelectionIndex;
-    CPArray     slideViews;
-    CPViewAnimation viewAnimation @accessors;
     BOOL        animate @accessors;
 
 /*
@@ -125,12 +132,14 @@ var firstWeekdayIsMonday = nil;
     if (self = [super initWithFrame:aFrame])
     {
         _datePickerMode = CPSingleDateMode;
-//        _datePickerStyle = CPClockAndCalendarDatePickerStyle;
-//        _datePickerElements = CPYearMonthDayDatePickerElementFlag;
+//      _datePickerStyle = CPClockAndCalendarDatePickerStyle;
+//      _datePickerElements = CPYearMonthDayDatePickerElementFlag;
         _timeInterval = 0;
         _minDate = [CPDate distantPast];
         _maxDate = [CPDate distantFuture];
         animate = YES;
+        _textFont = [CPFont boldSystemFontOfSize:13];
+        _textColor = [CPColor colorWithWhite:0.2 alpha:0.8];
 
         var bounds = [self bounds];
 
@@ -155,7 +164,7 @@ var firstWeekdayIsMonday = nil;
         currentMonthView = slideViews[1];
         [self addSubview:holderView];
 
-        viewAnimation = [[[CPDatePicker animationClass] alloc] initWithDuration:0.6 animationCurve:CPAnimationEaseInOut];
+        viewAnimation = [[[self animationClass] alloc] initWithDuration:0.6 animationCurve:CPAnimationEaseInOut];
         [viewAnimation setDelegate:self];
 
         // Default to today's date.
@@ -176,9 +185,26 @@ var firstWeekdayIsMonday = nil;
     return firstWeekdayIsMonday;
 }
 
-+ (Class)animationClass
+- (Class)animationClass
 {
     return [CPViewAnimation class];
+}
+
+- (void)setTextFont:(CPFont)aFont
+{
+    _textFont = aFont;
+    [self setNeedsLayout];
+}
+
+- (void)setTextColor:(CPColor)aColor
+{
+    _textColor = aColor;
+    [self setNeedsLayout];
+}
+
+- (void)setNeedsLayout
+{
+    [slideViews makeObjectsPerformSelector:@selector(setNeedsLayout)];
 }
 
 - (BOOL)becomeFirstResponder
@@ -246,6 +272,13 @@ var firstWeekdayIsMonday = nil;
     [self interpretKeyEvents:[CPArray arrayWithObject:anEvent]];
 }
 
+- (void)keyUp:(CPEvent)anEvent
+{
+    var keyCode = [anEvent keyCode];
+    if ( keyCode >= 37 && keyCode <=40)
+        [self _sendAction];
+}
+
 - (void)moveDown:(id)sender
 {
     [self moveByDays:7];
@@ -274,8 +307,6 @@ var firstWeekdayIsMonday = nil;
         [self setTimeInterval:[self timeInterval] + ti];
     else
         [self setDateValue:[CPDate dateWithTimeInterval:ti sinceDate:[self dateValue]]];
-
-    [self _sendAction];
 }
 
 - (void)_displayMonth:(CPDate)aMonthDate selectedDate:(CPDate)aSelectedDate
@@ -349,7 +380,7 @@ var firstWeekdayIsMonday = nil;
 
 - (void)_slideMonth:(id)sender
 {
-    var direction = [sender tag],
+    var direction = [sender direction],
         current = slideViews[1],
         date = (direction == -1) ? [current previousMonth]:[current nextMonth];
 
@@ -446,8 +477,6 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
     CPControl   previousControl @accessors(readonly);
     CPControl   nextControl @accessors(readonly);
     CPArray     dayLabels;
-
-    CGGradient  _headerGradient;
 }
 
 - (id)initWithFrame:(CGRect)aFrame datePicker:(CPDatePicker)datePicker
@@ -463,12 +492,12 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
 
         [self addSubview:title];
 
-        previousControl = [[_CPDatePickerHeaderArrowControl alloc] initWithFrame:CGRectMake(10, 9, 10, 10)];
+        previousControl = [[_CPDatePickerHeaderArrowControl alloc] initWithFrame:CGRectMake(5, 5, 10, 10)];
         [previousControl setDirection:-1];
         [previousControl setAutoresizingMask:CPViewMaxXMargin];
         [self addSubview:previousControl];
 
-        nextControl = [[_CPDatePickerHeaderArrowControl alloc] initWithFrame:CGRectMake(CGRectGetMaxX([self bounds]) - 21, 9, 10, 10)];
+        nextControl = [[_CPDatePickerHeaderArrowControl alloc] initWithFrame:CGRectMake(CGRectGetMaxX([self bounds]) - 15, 5, 10, 10)];
         [nextControl setDirection:1];
         [nextControl setAutoresizingMask:CPViewMinXMargin];
         [self addSubview:nextControl];
@@ -489,8 +518,6 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
             [self addSubview:label];
         }
 
-        _headerGradient = CGGradientCreateWithColorComponents(CGColorSpaceCreateDeviceRGB(), [238.0/255.0, 241.0/255.0, 244.0/255.0, 1.0, 219.0/255.0, 225.0/255.0, 231.0/255.0, 1.0], [0, 1], 2);
-
         [self setNeedsLayout];
     }
 
@@ -501,7 +528,7 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
 {
     [title setStringValue:[CPString stringWithFormat:@"%s %i", _monthNames[aDate.getUTCMonth()], aDate.getUTCFullYear()]];
     [title sizeToFit];
-    [title setCenter:CGPointMake(CGRectGetMidX([self bounds]), 13)];
+    [title setCenter:CGPointMake(CGRectGetMidX([self bounds]), 8)];
 }
 
 - (void)layoutSubviews
@@ -510,9 +537,9 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
         width = CGRectGetWidth(bounds);
             
     // Arrows
-    var buttonOrigin = CGSizeMake(5,5);
-    [previousControl setFrameOrigin:CGPointMake(buttonOrigin.width + 5, buttonOrigin.height)];
-    [nextControl setFrameOrigin:CGPointMake(width - 16 - buttonOrigin.width - 5, buttonOrigin.height)];
+    var buttonOrigin = CGPointMake(5,5);
+    [previousControl setFrameOrigin:CGPointMake(buttonOrigin.x, buttonOrigin.y)];
+    [nextControl setFrameOrigin:CGPointMake(width - buttonOrigin.x - 10, buttonOrigin.y)];
 
     // Weekday label
     var numberOfLabels = [dayLabels count],
@@ -530,9 +557,10 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
         maxY = CGRectGetHeight(rect);
 
     CGContextAddRect(context, rect);
-    CGContextDrawLinearGradient(context, _headerGradient, CGPointMake(0, 0), CGPointMake(0, maxY), 0);
-
-    [[CPColor colorWithCalibratedRed:161/255 green:171/255 blue:186/255 alpha:1] setStroke];
+    [[CPColor colorWithWhite:248/255 alpha:0.8] setFill];
+    CGContextFillPath(context);
+    
+    [[CPColor colorWithWhite:0.6 alpha:0.8] setStroke];
     var path = [CPBezierPath bezierPath];
     [path setLineWidth:0.5];
     [path moveToPoint:CGPointMake(0, maxY)];
@@ -599,6 +627,7 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
         [self setValue:CGSizeMake(16.0, 16.0) forThemeAttribute:@"min-size"];
         [self setValue:CGSizeMake(16.0, 16.0) forThemeAttribute:@"max-size"];
     }
+    
     return self;
 }
 
@@ -610,15 +639,15 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
     CGContextBeginPath(context);
 
     CGContextTranslateCTM(context, CGRectGetWidth(bounds) / 2.0, CGRectGetHeight(bounds) / 2.0);
-    CGContextRotateCTM(context, - direction * Math.PI/2);
+    CGContextScaleCTM(context, direction , 1);
     CGContextTranslateCTM(context, -CGRectGetWidth(bounds) / 2.0, -CGRectGetHeight(bounds) / 2.0);
-
+        
     // Center, but crisp.
-    CGContextTranslateCTM(context, FLOOR((CGRectGetWidth(bounds) - 9.0) / 2.0), FLOOR((CGRectGetHeight(bounds) - 8.0) / 2.0));
+    //CGContextTranslateCTM(context, FLOOR((CGRectGetWidth(bounds) - 9.0) / 2.0), FLOOR((CGRectGetHeight(bounds) - 8.0) / 2.0));
 
     CGContextMoveToPoint(context, 0.0, 0.0);
-    CGContextAddLineToPoint(context, 9.0, 0.0);
-    CGContextAddLineToPoint(context, 4.5, 8.0);
+    CGContextAddLineToPoint(context, CGRectGetWidth(bounds), CGRectGetHeight(bounds) / 2.0);
+    CGContextAddLineToPoint(context, 0, CGRectGetHeight(bounds));
     CGContextAddLineToPoint(context, 0.0, 0.0);
 
     CGContextClosePath(context);
@@ -632,36 +661,6 @@ var WEEKDAY_LABEL_HEIGHT  = 20,
 
 @end
 
-/*
- * LPCalendarView
- * LPKit
- *
- * Created by Ludwig Pettersson on September 21, 2009.
- *
- * The MIT License
- *
- * Copyright (c) 2009 Ludwig Pettersson
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- */
-
 var immutableDistantFuture = [CPDate distantFuture];
 
 @implementation _CPDatePickerMonthView : CPView
@@ -671,7 +670,6 @@ var immutableDistantFuture = [CPDate distantFuture];
     CPDate          date @accessors;
     CPDate          previousMonth @accessors(readonly);
     CPDate          nextMonth @accessors(readonly);
-                                        
     CPArray         dayTiles @accessors;
     
     CGGradient      _calendarGradient;
@@ -692,7 +690,7 @@ var immutableDistantFuture = [CPDate distantFuture];
             [dayTiles addObject:dayView];        
         }
 
-        _calendarGradient = CGGradientCreateWithColorComponents(CGColorSpaceCreateDeviceRGB(), [219.0/255.0, 225.0/255.0, 231.0/255.0, 1.0, 200.0/255.0, 205.0/255.0, 211.0/255.0, 1.0], [0, 1], 2);
+        _calendarGradient = CGGradientCreateWithColorComponents(CGColorSpaceCreateDeviceRGB(), [246.0/255.0, 246.0/255.0, 246.0/255.0, 1.0, 238.0/255.0, 238.0/255.0, 238.0/255.0, 1.0], [0, 1], 2);
 
         [self setNeedsLayout];
     }
@@ -789,14 +787,15 @@ var immutableDistantFuture = [CPDate distantFuture];
         var dayInWeek = tileIndex % 7,
             weekInMonth = (tileIndex - dayInWeek) / 7,
             tileFrame = CGRectMake(dayInWeek * width, weekInMonth * height, width, height);
-        
-        [dayTiles[tileIndex] setFrame:tileFrame];                
+
+        [dayTiles[tileIndex] setFrame:tileFrame];
     }
 }
 
 - (void)setNeedsLayout
 {
     [self tile];
+    [dayTiles makeObjectsPerformSelector:@selector(setNeedsLayout)];
 }
 
 - (CPInteger)indexOfTileForEvent:(CPEvent)anEvent
@@ -890,8 +889,11 @@ var immutableDistantFuture = [CPDate distantFuture];
     
     CGContextTranslateCTM(context, -0.5, -0.5);
 
-    [[CPColor colorWithCalibratedRed:161/255 green:171/255 blue:186/255 alpha:1] setStroke];
+    [[CPColor colorWithWhite:0.6 alpha:0.8] setStroke];
     [path stroke];
+    
+    CGContextTranslateCTM(context, +0.5, +0.5);
+    CGContextStrokeRect(context, [self bounds]);
     
     CGContextRestoreGState(context);
 }
@@ -912,19 +914,17 @@ var immutableDistantFuture = [CPDate distantFuture];
     BOOL            _isRight;
         
     CPColor         bezelColor;
-    CPColor         disabledBezelColor;
     CPColor         highlightedBezelColor;
-    CPColor         selectedBezelColor;
-    CPColor         selectedHighlightedBezelColor;
-    CPColor         disabledSelectedBezelColor;
     
-    CGGradient      _dayGradient;
+    CGGradient      _dayGradientSelected;
+    CGGradient      _dayGradientHighlighted;
 }
 
 + (id)dayViewWithDatePicker:(CPDatePicker)aDatePicker
 {
     var dayView = [[self alloc] initWithFrame:CGRectMakeZero()];
     [dayView setDatePicker:aDatePicker];
+    
     return dayView;
 }
 
@@ -939,32 +939,29 @@ var immutableDistantFuture = [CPDate distantFuture];
         [textField setAutoresizingMask:CPViewMinXMargin | CPViewMaxXMargin | CPViewMinYMargin | CPViewMaxYMargin];
 
         // Normal
-        bezelColor = [CPColor colorWithWhite:0.6 alpha:0.2];
+        bezelColor = [CPColor colorWithWhite:0.7 alpha:0.2];
         
-        [textField setValue:[CPFont boldSystemFontOfSize:14.0] forThemeAttribute:@"font" inState:CPThemeStateNormal];
-        [textField setValue:[CPColor colorWithHexString:@"333"] forThemeAttribute:@"text-color" inState:CPThemeStateNormal];
-        [textField setValue:[CPColor colorWithWhite:1 alpha:0.8] forThemeAttribute:@"text-shadow-color" inState:CPThemeStateNormal];
-        [textField setValue:CGSizeMake(1.0, 1.0) forThemeAttribute:@"text-shadow-offset" inState:CPThemeStateNormal];
+        [textField setValue:[_datePicker textFont] forThemeAttribute:@"font" inState:CPThemeStateNormal];
+        [textField setValue:[_datePicker textColor] forThemeAttribute:@"text-color" inState:CPThemeStateNormal];
+        [textField setValue:[CPColor colorWithWhite:1 alpha:1] forThemeAttribute:@"text-shadow-color" inState:CPThemeStateNormal];
+        [textField setValue:CGSizeMake(0.0, 1.0) forThemeAttribute:@"text-shadow-offset" inState:CPThemeStateNormal];
         
         // Highlighted
-        highlightedBezelColor = [CPColor colorWithWhite:0.5 alpha:0.5];
-        [textField setValue:[CPColor colorWithHexString:@"555"] forThemeAttribute:@"text-color" inState:CPThemeStateHighlighted];
+        highlightedBezelColor = [CPColor colorWithRed:161/255 green:166/255 blue:173/255 alpha:1];
+        [textField setValue:[CPColor whiteColor] forThemeAttribute:@"text-color" inState:CPThemeStateHighlighted];
+        [textField setValue:CGSizeMake(0, 0) forThemeAttribute:@"text-shadow-offset" inState:CPThemeStateHighlighted];
         
         // Selected
-        selectedBezelColor = [CPColor colorWithCalibratedRed:88/255 green:145/255 blue:244/255 alpha:1];
-        
-        [textField setValue:[CPColor colorWithHexString:@"fff"] forThemeAttribute:@"text-color" inState:CPThemeStateSelected];
-        [textField setValue:[CPColor colorWithWhite:0 alpha:0.4] forThemeAttribute:@"text-shadow-color" inState:CPThemeStateSelected];
-        
-        // Selected & Highlighted
-        selectedHighlightedBezelColor = [CPColor colorWithCalibratedRed:58/255 green:115/255 blue:214/255 alpha:1];
+        [textField setValue:[_datePicker textColor] forThemeAttribute:@"text-color" inState:CPThemeStateSelected];
+        [textField setValue:[CPColor whiteColor] forThemeAttribute:@"text-shadow-color" inState:CPThemeStateSelected];
+        [textField setValue:CGSizeMake(0, 0) forThemeAttribute:@"text-shadow-offset" inState:CPThemeStateSelected];
         
         // Disabled
         [textField setValue:[CPColor colorWithWhite:0 alpha:0.3] forThemeAttribute:@"text-color" inState:CPThemeStateDisabled];
-        disabledBezelColor = [CPColor clearColor];
-
-        _dayGradient = CGGradientCreateWithColorComponents(CGColorSpaceCreateDeviceRGB(), [0, 0, 0, 0.3, 0, 0, 0, 0.1, 0, 0, 0, 0], [0,0.5,1], 3);
-
+        
+        _dayGradientHighlighted = CGGradientCreateWithColorComponents(CGColorSpaceCreateDeviceRGB(), [0, 0, 0, 0.3, 0, 0, 0, 0.1, 0, 0, 0, 0], [0,0.5,1], 3);
+        _dayGradientSelected = CGGradientCreateWithColorComponents(CGColorSpaceCreateDeviceRGB(), [167/255, 217/255, 244/255, 1, 108/255, 162/255, 192/255, 1,], [0,1], 2);
+        
         [self addSubview:textField];
         [self setNeedsLayout];
     }
@@ -1035,7 +1032,7 @@ var immutableDistantFuture = [CPDate distantFuture];
     // Update & Position the new label
     [textField setStringValue:[date.getDate() stringValue]];
     [textField sizeToFit];    
-    [textField setCenter:CGPointMake(CGRectGetMidX(bounds), CGRectGetMidY(bounds))];
+    [textField setCenter:CGPointMake(CGRectGetMidX(bounds)-1, CGRectGetMidY(bounds)-1)];
 }
 
 - (void)setIsLeft:(BOOL)isLeft
@@ -1050,38 +1047,49 @@ var immutableDistantFuture = [CPDate distantFuture];
     [self setNeedsDisplay:YES];
 }
 
+- (void)layoutSubviews
+{
+    [textField setValue:[_datePicker textFont] forThemeAttribute:@"font" inState:CPThemeStateNormal];
+    [textField setValue:[_datePicker textColor] forThemeAttribute:@"text-color" inState:CPThemeStateNormal];
+    
+    var bounds = [self bounds];
+    [textField setCenter:CGPointMake(CGRectGetMidX(bounds)-1, CGRectGetMidY(bounds)-1)];
+}
+
 - (void)drawRect:(CGRect)aRect
 {
     var context = [[CPGraphicsContext currentContext] graphicsPort],
         state = [self themeState],
-        bounds = [self bounds],
-        color;
+        bounds = [self bounds];
     
-    if (state == CPThemeStateNormal)
-        color = bezelColor;
-    else if (state & CPThemeStateDisabled)
-        color = disabledBezelColor;
-    else if (state == CPThemeStateHighlighted)
-        color = highlightedBezelColor;
-    else if (state == CPThemeStateSelected)
-        color = selectedBezelColor;
-    else if (state & (CPThemeStateHighlighted | CPThemeStateSelected))
-        color = selectedHighlightedBezelColor;
-    
-    //CGContextSaveGState(context);
-    [color setFill];
-    CGContextFillRect(context, bounds);
+    bounds.size.width -=1;
+    bounds.size.height -=1;
 
-    if (state == CPThemeStateSelected || state == (CPThemeStateSelected | CPThemeStateHighlighted))
-    {     
+    if (state == CPThemeStateHighlighted)
+    {   
+        [highlightedBezelColor setFill];
+        CGContextFillRect(context, bounds);
+
         CGContextAddRect(context, bounds);
-        CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(0, 0), CGPointMake(0, 6), 0);
-        CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(0, CGRectGetHeight(bounds)), CGPointMake(0, CGRectGetHeight(bounds) - 2), 0);
+        CGContextDrawLinearGradient(context, _dayGradientHighlighted, CGPointMake(0, 0), CGPointMake(0, 6), 0);
+        CGContextDrawLinearGradient(context, _dayGradientHighlighted, CGPointMake(0, CGRectGetHeight(bounds)), CGPointMake(0, CGRectGetHeight(bounds) - 2), 0);
 
-        if (_isLeft)
-            CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(0, 0), CGPointMake(3, 0), 0);
-        if (_isRight)
-            CGContextDrawLinearGradient(context, _dayGradient, CGPointMake(CGRectGetWidth(bounds), 0), CGPointMake(CGRectGetWidth(bounds) - 2, 0), 0);
+        CGContextDrawLinearGradient(context, _dayGradientHighlighted, CGPointMake(0, 0), CGPointMake(3, 0), 0);
+        CGContextDrawLinearGradient(context, _dayGradientHighlighted, CGPointMake(CGRectGetWidth(bounds), 0), CGPointMake(CGRectGetWidth(bounds) - 2, 0), 0);
+    }
+    else if (state & CPThemeStateSelected)
+    {
+        CGContextAddRect(context, bounds);
+        CGContextDrawLinearGradient(context, _dayGradientSelected, CGPointMake(0, 0), CGPointMake(0, CGRectGetHeight(bounds)), 0);
+        
+        [[CPColor colorWithCalibratedRed:112/255 green:157/255 blue:183/255 alpha:1] setStroke];
+        CGContextSetLineWidth(context, 0.5);
+        CGContextStrokeRect(context,bounds);
+    }
+    else if (state == CPThemeStateNormal)
+    {
+        [bezelColor setFill];
+        CGContextFillRect(context, bounds);
     }
     //CGContextRestoreGState(context);
 }
