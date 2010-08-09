@@ -409,8 +409,8 @@ CPTexturedBackgroundWindowMask
         [_windowView _setWindow:self];
         [_windowView setNextResponder:self];
 
-        [self setMovableByWindowBackground:(aStyleMask & CPHUDBackgroundWindowMask) && !(aStyleMask & CPDocModalWindowMask)];
-        
+        [self setMovableByWindowBackground:aStyleMask & CPHUDBackgroundWindowMask];
+
         // Create a generic content view.
         [self setContentView:[[CPView alloc] initWithFrame:CGRectMakeZero()]];
 
@@ -464,17 +464,14 @@ CPTexturedBackgroundWindowMask
 */
 + (Class)_windowViewClassForStyleMask:(unsigned)aStyleMask
 {
-    if ((aStyleMask & CPHUDBackgroundWindowMask) && (aStyleMask & CPDocModalWindowMask))
-        return _CPDocModalHUDWindowView;
-
-    else if (aStyleMask & CPHUDBackgroundWindowMask)
+    if (aStyleMask & CPHUDBackgroundWindowMask)
         return _CPHUDWindowView;
+
+    else if (aStyleMask === CPBorderlessWindowMask)
+        return _CPBorderlessWindowView;
 
     else if (aStyleMask & CPDocModalWindowMask)
         return _CPDocModalWindowView;
-    
-    else if (aStyleMask === CPBorderlessWindowMask)
-        return _CPBorderlessWindowView;
 
     return _CPStandardWindowView;
 }
@@ -2728,7 +2725,6 @@ CPCustomWindowShadowStyle   = 3;
 @import "_CPWindowView.j"
 @import "_CPStandardWindowView.j"
 @import "_CPDocModalWindowView.j"
-@import "_CPDocModalHUDWindowView.j"
 @import "_CPHUDWindowView.j"
 @import "_CPBorderlessWindowView.j"
 @import "_CPBorderlessBridgeWindowView.j"

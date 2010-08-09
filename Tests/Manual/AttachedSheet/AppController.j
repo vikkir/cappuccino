@@ -20,7 +20,7 @@
     window = [[CPWindow alloc] initWithContentRect:CGRectMake(100,100,500,300) styleMask:CPResizableWindowMask],
         contentView = [window contentView];
    	[window setMinSize:CGSizeMake(300, 200)];
-    sheet = [[CPWindow alloc] initWithContentRect:CGRectMake(0,0,300,100) styleMask:CPDocModalWindowMask|CPHUDBackgroundWindowMask];
+    sheet = [[CPWindow alloc] initWithContentRect:CGRectMake(0,0,300,100) styleMask:CPDocModalWindowMask|CPResizableWindowMask];
     [sheet setMinSize:CGSizeMake(300,100)];
     
     var sheetContent = [sheet contentView];
@@ -65,7 +65,7 @@
     [CPApp beginSheet:sheet modalForWindow:window modalDelegate:self didEndSelector:@selector(didEndSheet:returnCode:contextInfo:) contextInfo:nil];
 }
 
-- (void)alertDidEnd:(CPWindow)aSheet returnCode:(int)returnCode contextInfo:(id)contextInfo
+- (void)alertDidEnd:(CPWindow)sheet returnCode:(int)returnCode contextInfo:(id)contextInfo
 {
 	CPLogConsole(_cmd+" returnCode " + returnCode);
 }
@@ -75,7 +75,7 @@
     [CPApp endSheet:sheet returnCode:[sender tag]];
 }
 
-- (void)didEndSheet:(CPWindow)aSheet returnCode:(int)returnCode contextInfo:(id)contextInfo
+- (void)didEndSheet:(CPWindow)sheet returnCode:(int)returnCode contextInfo:(id)contextInfo
 {
     var str = [textField stringValue];
     
