@@ -20,7 +20,7 @@
     window = [[CPWindow alloc] initWithContentRect:CGRectMake(100,100,500,300) styleMask:CPResizableWindowMask],
         contentView = [window contentView];
    	[window setMinSize:CGSizeMake(300, 200)];
-    sheet = [[CPWindow alloc] initWithContentRect:CGRectMake(0,0,300,100) styleMask:CPDocModalWindowMask|CPHUDBackgroundWindowMask|CPResizableWindowMask];
+    sheet = [[CPWindow alloc] initWithContentRect:CGRectMake(0,0,300,100) styleMask:CPDocModalWindowMask|CPHUDBackgroundWindowMask];
     [sheet setMinSize:CGSizeMake(300,100)];
     
     var sheetContent = [sheet contentView];
