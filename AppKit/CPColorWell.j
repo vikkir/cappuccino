@@ -54,7 +54,7 @@ var _CPColorWellDidBecomeExclusiveNotification = @"_CPColorWellDidBecomeExclusiv
     {
         _active = NO;
         _bordered = YES;
-        _color = [CPColor whiteColor];
+        [self setColor:[CPColor whiteColor]];
         
         [self drawBezelWithHighlight:NO];
         [self drawWellInside:CGRectInset([self bounds], 3.0, 3.0)];
@@ -124,6 +124,12 @@ var _CPColorWellDidBecomeExclusiveNotification = @"_CPColorWellDidBecomeExclusiv
     _color = aColor;
     
     [self drawWellInside:CGRectInset([self bounds], 3.0, 3.0)];
+    [super setObjectValue:_color];
+}
+
+- (void)setObjectValue:(CPColor)aColor
+{
+    [self setColor:aColor];
 }
 
 /*!
@@ -279,7 +285,7 @@ var CPColorWellColorKey     = "CPColorWellColorKey",
     {
         _active = NO;
         _bordered = [aCoder decodeObjectForKey:CPColorWellBorderedKey];
-        _color = [aCoder decodeObjectForKey:CPColorWellColorKey];
+        [self setColor:[aCoder decodeObjectForKey:CPColorWellColorKey]];
 
         [self drawBezelWithHighlight:NO];
         [self drawWellInside:CGRectInset([self bounds], 3.0, 3.0)];
