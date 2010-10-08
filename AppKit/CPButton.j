@@ -128,7 +128,7 @@ CPButtonImageOffset   = 3.0;
 + (id)themeAttributes
 {
     return [CPDictionary dictionaryWithObjects:[[CPNull null], 0.0, _CGInsetMakeZero(), _CGInsetMakeZero(), [CPNull null]]
-                                       forKeys:[@"image", @"imageOffset", @"bezel-inset", @"content-inset", @"bezel-color"]];
+                                       forKeys:[@"image", @"image-offset", @"bezel-inset", @"content-inset", @"bezel-color"]];
 }
 
 - (id)initWithFrame:(CGRect)aFrame
@@ -311,12 +311,12 @@ CPButtonImageOffset   = 3.0;
 
 - (void)setImageOffset:(float)theImageOffset
 {
-    [self setValue:theImageOffset forThemeAttribute:@"imageOffset"];
+    [self setValue:theImageOffset forThemeAttribute:@"image-offset"];
 }
 
 - (float)imageOffset
 {
-    return [self valueForThemeAttribute:@"imageOffset"];
+    return [self valueForThemeAttribute:@"image-offset"];
 }
 
 - (void)setShowsStateBy:(CPInteger)aMask
@@ -435,6 +435,7 @@ CPButtonImageOffset   = 3.0;
     if (_CGInsetIsEmpty(contentInset))
         return bounds;
 
+    bounds = _CGRectMakeCopy(bounds);
     bounds.origin.x += contentInset.left;
     bounds.origin.y += contentInset.top;
     bounds.size.width -= contentInset.left + contentInset.right;
@@ -453,6 +454,7 @@ CPButtonImageOffset   = 3.0;
     if (_CGInsetIsEmpty(bezelInset))
         return bounds;
 
+    bounds = _CGRectMakeCopy(bounds);
     bounds.origin.x += bezelInset.left;
     bounds.origin.y += bezelInset.top;
     bounds.size.width -= bezelInset.left + bezelInset.right;
@@ -536,7 +538,7 @@ CPButtonImageOffset   = 3.0;
     {
         [contentView setText:([self hasThemeState:CPThemeStateHighlighted] && _alternateTitle) ? _alternateTitle : _title];
         [contentView setImage:[self currentValueForThemeAttribute:@"image"]];
-        [contentView setImageOffset:[self currentValueForThemeAttribute:@"imageOffset"]];
+        [contentView setImageOffset:[self currentValueForThemeAttribute:@"image-offset"]];
 
         [contentView setFont:[self currentValueForThemeAttribute:@"font"]];
         [contentView setTextColor:[self currentValueForThemeAttribute:@"text-color"]];
