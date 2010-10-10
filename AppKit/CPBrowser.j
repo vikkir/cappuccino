@@ -20,9 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+@import <Foundation/CPIndexSet.j>
+
 @import "CPControl.j"
 @import "CPImage.j"
 @import "CPTableView.j"
+@import "CPTextField.j"
 @import "CPScrollView.j"
 
 /*!
@@ -495,7 +498,7 @@
     [_contentView scrollRectToVisible:[[[self tableViewInColumn:columnIndex] enclosingScrollView] frame]];
 }
 
-– (void)scrollRowToVisible:(unsigned)rowIndex inColumn:(unsigned)columnIndex
+- (void)scrollRowToVisible:(unsigned)rowIndex inColumn:(unsigned)columnIndex
 {
     [self scrollColumnToVisible:columnIndex];
     [[self tableViewInColumn:columnIndex] scrollRowToVisible:rowIndex];
@@ -807,6 +810,8 @@ var _CPBrowserResizeControlBackgroundImage = nil;
 }
 
 @end
+
+@import <Foundation/CPObject.j>
 
 @implementation _CPBrowserTableDelegate : CPObject
 {
