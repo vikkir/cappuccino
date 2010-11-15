@@ -1,0 +1,37 @@
+DragAndDropOutlineView
+
+
+DragAndDropOutlineView is a little application that shows how to implement drag and drop in a CPOutlineView. The application presents some hierarchical data with some fabricated icons. Users are allowed to edit cells, add groups and leafs, and can drag any of the rows around to reorder elements of the outline view. This sample code demonstrates:
+
+	• Drag and drop in a CPOutlineView, including drop on and between items.
+	• How to re-target the location of a drop in an outline view.
+	• Display and editing of custom and standard cells in an outline view.
+	• How to reload parts of an outline view when the data source's model changes.
+	• Other simple outline view features (eg. cell editing, handling single click actions, etc...)
+
+Major source files and what's interesting about them:
+
+AppController.j
+
+The AppController object acts as the outline view's delegate and data source. It maintains a tree like structure as its model which, is initially loaded from an input file. The nodes of the this structure are SimpleTreeNodes, each having a pointer to some SimpleTreeData. Items in the outlineView are SimpleTreeNode objects. Given a particular SimpleTreeNode, the AppController can access the data part and determine is the item is expandable, a leaf, etc.   
+
+In order to be the recipient of drags, the AppController registers the outlineView for a few simple drag types, including a custom drag type used to identify which rows are being dragged. When a drag with appropriate paste board types hovers over the outline view, the AppController will be sent the method outlineView:validateDrop:proposedItem:proposedChildIndex:. In this method, the AppController determines if the proposed drop location (determined by parent, and child index) is valid. To demonstrate retargeting, the AppController simply retargets the drop to the entire outline view when the "Only Allowed To Drop On Root" check is set.
+
+To allow drags to be initiated from the outline view, the AppController must do some additional work. When a user clicks and drags horizontally (or vertically if setVerticalMotionCanBeginDrag:YES has been sent to outlineView), it is sent the delegate method outlineView:writeItems:toPasteboard:. In this method, the AppController writes CPStringPboardType data (for fun), and DragDropSimplePboardType to support drag re-ordering. This is enough to allow outlineView to be a drag source.
+
+The AppController also demonstrates how to allow check box button cells in a table view to not change the selection when clicked. Review the code for outlineView:shouldSelectItem: and outlineView:shouldTrackCell:forTableColumn:item: for more information.
+
+CPOutlineView_Extensions.m
+
+Implements some convenience methods in a category.
+
+Implements an CPOutlineView subclass to support drags to the trash.
+
+ImageAndTextCell.j
+
+The cell class used for display in our outline view. ImageAndTextView can display images and text at the same time. The implementation is pretty simple, and mostly involves accounting for the size of the image when displaying (in drawWithFrame:inView:) and editing the cell (in editWithFrame:inView:editor:delegate:event:). In addition, it properly implements titleRectForBounds: in order for expansion tool tips to automatically work in a table or outline view.
+
+SimpleNodeData.j
+
+This represents the model object. The model objects are contained in standard CPTreeNode instances. 
+
