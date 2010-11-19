@@ -3,83 +3,101 @@
 @import <Foundation/CPNumber.j>
 @import <Foundation/CPSortDescriptor.j>
 
-var ELEMENTS = 100,
+var ELEMENTS = 1000,
     REPEATS = 10;
 
 @implementation CPArrayPerformanceTest : OJTestCase
-
-- (void)testSortUsingDescriptorsSpeed
 {
-    var array = [self makeUnsorted];
-
-    var descriptors = [
-        [CPSortDescriptor sortDescriptorWithKey:"a" ascending:NO],
-        [CPSortDescriptor sortDescriptorWithKey:"b" ascending:YES]
-    ];
-
-    var start = (new Date).getTime();
-
-    for (var i=0; i<REPEATS; i++)
-    {
-        var sorted = [array sortedArrayUsingDescriptors:descriptors];
-        [self checkSorted:sorted];
-    }
-
-    var end = (new Date).getTime();
-
-    CPLog.warn(_cmd+": "+(end-start)+"ms");
+    CPArray unsorted;
+    CPArray randunsorted;
+    CPArray descriptors;
 }
 
-- (void)testSortUsingNativeSort
+- (void)setUp
 {
-    var array = [self makeUnsorted];
-
-    var descriptors = [
+    descriptors = [
         [CPSortDescriptor sortDescriptorWithKey:"a" ascending:NO],
         [CPSortDescriptor sortDescriptorWithKey:"b" ascending:YES]
     ];
     
-    function sortFunction(lhs, rhs) {
-        return ([lhs a] === [rhs a]) ? ([lhs b] - [rhs b]) : ([rhs a] - [lhs a]);
-    }
+    unsorted = [self makeUnsorted];
+    randunsorted = [self makeUnsortedRandom];
+}
 
-    var start = (new Date).getTime();
+- (void)testSortUsingDescriptorsSpeed
+{
+    var start = new Date();
 
-    for (var i=0; i<REPEATS; i++)
+    for (var i = 0; i < REPEATS; i++)
     {
-        var sorted = [array copy];
-        sorted.sort(sortFunction)
-        [self checkSorted:sorted];
+        var sorted = [unsorted copy];
+        [sorted sortUsingDescriptors:descriptors];
+    }
+    
+    var d = (new Date()) - start;    
+    start = new Date();
+    
+    for (var i = 0; i < REPEATS; i++)
+    {
+        var sorted = [unsorted copy];
+        [sorted nativeSortUsingDescriptors:descriptors];
     }
 
-    var end = (new Date).getTime();
+    var nd = (new Date()) - start;
 
-    CPLog.warn(_cmd+": "+(end-start)+"ms");
+    CPLog.warn(_cmd+" "+ d +"ms native: " + nd + "ms");
+}
+
+- (void)testSortRandomUsingDescriptorsSpeed
+{
+    var start = new Date();
+
+    for (var i = 0; i < REPEATS; i++)
+    {
+        var sorted = [randunsorted copy];
+        [sorted sortUsingDescriptors:descriptors];
+    }
+    
+    var d = (new Date()) - start;
+    start = new Date();
+    
+    for (var i=  0; i < REPEATS; i++)
+    {
+        var sorted = [randunsorted copy];
+        [sorted nativeSortUsingDescriptors:descriptors];
+    }
+
+    var nd = new Date() - start;
+
+    CPLog.warn(_cmd+" "+ d +"ms native: " + nd + "ms");
+}
+
+- (CPArray)makeUnsortedRandom
+{
+    var array = [CPArray array];
+    for (var i = 0; i < ELEMENTS; i++)
+    {
+        var s = [Sortable new];
+        [s setA:ROUND(RAND()*1000)];
+        [s setB:ROUND(RAND()*1000)];
+        [array addObject:s];
+    }
+    
+    return array;
 }
 
 - (CPArray)makeUnsorted
 {
-    var array = [];
-    for (var i=0; i<ELEMENTS; i++) {
+    var array = [CPArray array];
+    for (var i = 0; i < ELEMENTS; i++)
+    {
         var s = [Sortable new];
         [s setA:(i % 5)];
-        [s setB:(ELEMENTS-i)];
-        array.push(s);
+        [s setB:(ELEMENTS - i)];
+        [array addObject:s];
     }
+    
     return array;
-}
-
-- (void)checkSorted:(CPArray)sorted
-{
-    // Verify it really got sorted.
-    for (var j=0; j<ELEMENTS; j++) {
-        var expectedA = 4-FLOOR(j * 5 / ELEMENTS);
-        if (sorted[j].a != expectedA)
-            [self fail:"a out of order: "+expectedA+" != "+sorted[j].a];
-        var expectedB = (5-expectedA) + 5 * (j % (ELEMENTS / 5))
-        if (sorted[j].b != expectedB)
-            [self fail:"b out of order: "+expectedB+" != "+sorted[j].b];
-    }
 }
 
 @end
@@ -88,6 +106,27 @@ var ELEMENTS = 100,
 {
     int a @accessors;
     int b @accessors;
+}
+
+@end
+
+@implementation CPArray (NativeSort)
+
+- (CPArray)nativeSortUsingDescriptors:(CPArray)descriptors
+{
+    var compareObjectsUsingDescriptors = function (lhs, rhs)
+    {
+        var result = CPOrderedSame,
+            i = 0,
+            n = [descriptors count];
+    
+        while (i < n && result === CPOrderedSame)
+            result = [descriptors[i++] compareObject:lhs withObject:rhs];
+    
+        return result;
+    }
+    
+    sort(compareObjectsUsingDescriptors);
 }
 
 @end
