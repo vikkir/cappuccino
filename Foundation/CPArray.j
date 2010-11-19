@@ -1314,9 +1314,21 @@ CPEnumerationReverse    = 1 << 1;
     self[otherIndex] = temporary;
 }
 
-- (CPArray)sortUsingDescriptors:(CPArray)descriptors
+- (void)sortUsingDescriptors:(CPArray)descriptors
 {
-    [self sortUsingFunction:compareObjectsUsingDescriptors context:descriptors];
+    var compareObjectsUsingDescriptors = function (lhs, rhs)
+    {
+        var result = CPOrderedSame,
+            i = 0,
+            n = [descriptors count];
+    
+        while (i < n && result === CPOrderedSame)
+            result = [descriptors[i++] compareObject:lhs withObject:rhs];
+    
+        return result;
+    }
+    
+    msort(compareObjectsUsingDescriptors);
 }
 
 /*!
@@ -1326,7 +1338,28 @@ CPEnumerationReverse    = 1 << 1;
 */
 - (void)sortUsingFunction:(Function)aFunction context:(id)aContext
 {
-    var h, i, j, k, l, m, n = [self count], o;
+    msort(function(lhs, rhs) { return aFunction (lhs, rhs, aContext);});
+}
+
+/*!
+    Sorts the receiver array using an Objective-J method as a comparator.
+    @param aSelector the selector for the method to call for comparison
+*/
+- (void)sortUsingSelector:(SEL)aSelector
+{
+    var selectorCompare = function (lhs, rhs)
+    {
+        return [lhs performSelector:aSelector withObject:rhs];
+    }
+
+    msort(selectorCompare);
+}
+
+@end
+
+Array.prototype.msort = function (compareFunction)
+{
+    var h, i, j, k, l, m, n = this.length, o;
     var A, B = [];
 
     for (h = 1; h < n; h += h)
@@ -1338,54 +1371,25 @@ CPEnumerationReverse    = 1 << 1;
                 l = 0;
 
             for (i = 0, j = l; j <= m; i++, j++)
-                B[i] = self[j];
+                B[i] = this[j];
 
             for (i = 0, k = l; k < j && j <= m + h; k++)
             {
-                A = self[j];
-                o = aFunction(A, B[i], aContext);
+                A = this[j];
+                o = compareFunction(A, B[i]);
                 if (o >= 0)
-                    self[k] = B[i++];
+                    this[k] = B[i++];
                 else
                 {
-                    self[k] = A;
+                    this[k] = A;
                     j++;
                 }
             }
 
             while (k < j)
-                self[k++] = B[i++];
+                this[k++] = B[i++];
         }
     }
-}
-
-/*!
-    Sorts the receiver array using an Objective-J method as a comparator.
-    @param aSelector the selector for the method to call for comparison
-*/
-- (void)sortUsingSelector:(SEL)aSelector
-{
-    [self sortUsingFunction:selectorCompare context:aSelector];
-}
-
-@end
-
-var selectorCompare = function selectorCompare(object1, object2, selector)
-{
-    return [object1 performSelector:selector withObject:object2];
-}
-
-// sort using sort descriptors
-var compareObjectsUsingDescriptors= function compareObjectsUsingDescriptors(lhs, rhs, descriptors)
-{
-    var result = CPOrderedSame,
-        i = 0,
-        n = [descriptors count];
-
-    while (i < n && result === CPOrderedSame)
-        result = [descriptors[i++] compareObject:lhs withObject:rhs];
-
-    return result;
 }
 
 @implementation CPArray (CPCoding)
