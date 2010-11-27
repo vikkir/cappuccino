@@ -324,9 +324,9 @@ var CPObjectControllerContentKey                        = @"CPObjectControllerCo
 - (void)observeValueForKeyPath:(CPString)aKeyPath ofObject:(id)anObject change:(CPDictionary)change context:(id)context
 {
     if (_notifyObject)
-        [_object observeValueForKeyPath:_keyPath ofObject:_object change:change context:context];
+        [_object observeValueForKeyPath:aKeyPath ofObject:_object change:change context:context];
 
-    [_observer observeValueForKeyPath:_keyPath ofObject:_object change:change context:context];
+    [_observer observeValueForKeyPath:aKeyPath ofObject:_object change:change context:context];
 }
 
 - (CPString)description
@@ -559,11 +559,6 @@ var CPObjectControllerContentKey                        = @"CPObjectControllerCo
 
 - (id)valueForKeyPath:(CPString)theKeyPath
 {
-    var value = [_cachedValues objectForKey:theKeyPath];
-
-    if (value !== undefined && value !== nil)
-        return value;
-
     var values = [[_controller selectedObjects] valueForKeyPath:theKeyPath];
     value = [self _controllerMarkerForValues:values];
 
