@@ -20,11 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-@import "CPButton.j"
-@import "CPGeometry.j"
-@import "CPMenu.j"
-@import "CPMenuItem.j"
-
+@import <AppKit/CPButton.j>
+@import <AppKit/CPGeometry.j>
+@import <AppKit/CPMenu.j>
+@import <AppKit/CPMenuItem.j>
 
 var VISIBLE_MARGIN  = 7.0;
 
@@ -261,6 +260,9 @@ CPPopUpButtonStatePullsDown = CPThemeState("pulls-down");
         [[self selectedItem] setState:CPOnState];
 
     [self synchronizeTitleAndSelectedItem];
+
+    var binder = [CPKeyValueBinding getBinding:CPSelectedIndexBinding forObject:self];
+    [binder reverseSetValueFor:@"selectedIndex"];
 }
 
 /*!
@@ -725,6 +727,76 @@ CPPopUpButtonStatePullsDown = CPThemeState("pulls-down");
             [[self selectedItem] setState:CPOffState];
         }
     }
+}
+
+@end
+
+@implementation CPPopUpButton (BindingSupport)
+
+- (void)_setItemValues:(CPArray)values forKey:(CPString)key
+{
+    var i,
+        count = [values count];
+
+    if (count != [self numberOfItems])
+    {
+        [self removeAllItems];
+        var count2 = count;
+        while (count2--)
+            [self addItemWithTitle:@""];
+    }
+
+    if (!key)
+        return;
+
+    while (count--)
+        [[self itemAtIndex:count] setValue:[values objectAtIndex:count] forKey:key];
+}
+
+- (void)setValue:(id)aValue forKey:(CPString)aKey
+{
+CPLogConsole("setValue:" + aValue + "forKey:" + aKey);
+  if (aKey == CPSelectedIndexBinding)
+        [self selectItemAtIndex:aValue];
+  else if (aKey == CPSelectedValueBinding)
+        [self selectItemWithTitle:aValue];
+  else if (aKey == CPSelectedObjectBinding)
+        [self selectItemAtIndex:[self indexOfItemWithRepresentedObject:aValue]];
+  else if (aKey == CPSelectedTagBinding)
+        [self selectItemWithTag:aValue];
+  else if (aKey == CPContentValuesBinding)
+    {
+        [self _setItemValues:aValue forKey:@"title"];
+        [self synchronizeTitleAndSelectedItem];
+    }
+  else if (aKey == CPContentBinding)
+    {
+        [self _setItemValues:aValue forKey:@"representedObject"];
+
+        if (![self infoForBinding:CPContentValuesBinding])
+            [self _setItemValues:[aValue valueForKey:@"description"] forKey:@"title"];
+    }
+  else
+      [super setValue: anObject forKey: aKey];
+}
+
+- (id)valueForKey:(CPString)aKey
+{
+CPLogConsole("valueForKey:" + aKey);
+    if (aKey == CPSelectedIndexBinding)
+          return [self indexOfSelectedItem];
+    else if (aKey == CPSelectedValueBinding)
+          return [self titleOfSelectedItem];
+    else if (aKey == CPSelectedObjectBinding)
+          return [[self selectedItem] representedObject];
+    else if (aKey == CPSelectedTagBinding)
+          return [[self selectedItem] tag];
+    else if (aKey == CPContentValuesBinding)
+          return [self valueForKeyPath:@"itemArray.title"];
+    else if (aKey == CPContentBinding)
+          return [self valueForKeyPath:@"itemArray.representedObject"];
+    else
+        return [super valueForKey:aKey];
 }
 
 @end

@@ -190,7 +190,10 @@ var CPBindingOperationAnd = 0,
         newValue = [_source valueForKeyPath:aBinding];
 
     newValue = [self reverseTransformValue:newValue withOptions:options];
+    
+    [destination removeObserver:self forKeyPath:keyPath];
     [destination setValue:newValue forKeyPath:keyPath];
+    [destination addObserver:self forKeyPath:keyPath options:CPKeyValueObservingOptionNew context:aBinding];
 }
 
 - (void)observeValueForKeyPath:(CPString)aKeyPath ofObject:(id)anObject change:(CPDictionary)changes context:(id)context
@@ -430,15 +433,87 @@ CPNoSelectionMarker     = @"CPNoSelectionMarker";
 CPNotApplicableMarker   = @"CPNotApplicableMarker";
 
 // Binding name constants
-CPAlignmentBinding      = @"CPAlignmentBinding";
-CPEditableBinding       = @"CPEditableBinding";
-CPEnabledBinding        = @"CPEnabledBinding";
-CPFontBinding           = @"CPFontBinding";
-CPHiddenBinding         = @"CPHiddenBinding";
-CPSelectedIndexBinding  = @"CPSelectedIndexBinding";
-CPTextColorBinding      = @"CPTextColorBinding";
-CPToolTipBinding        = @"CPToolTipBinding";
-CPValueBinding          = @"value";
+CPAlignmentBinding                        = @"alignment";
+CPContentArrayBinding                     = @"contentArray";
+CPContentBinding                          = @"content";
+CPContentObjectBinding                    = @"contentObject";
+CPContentObjectsBinding                   = @"contentObjects";
+CPContentValuesBinding                    = @"contentValues";
+CPEnabledBinding                          = @"enabled";
+CPFontBinding                             = @"font";
+CPFontNameBinding                         = @"fontName";
+CPFontBoldBinding                         = @"fontBold";
+CPHiddenBinding                           = @"hidden";
+CPFilterPredicateBinding                  = @"filterPredicate";
+CPPredicateBinding                        = @"predicate";
+CPSelectedIndexBinding                    = @"selectedIndex";
+CPSelectedLabelBinding                    = @"selectedLabel";
+CPSelectedObjectBinding                   = @"selectedObject";
+CPSelectedObjectsBinding                  = @"selectedObjects";
+CPSelectedTagBinding                      = @"selectedTag";
+CPSelectedValueBinding                    = @"selectedValue";
+CPSelectedValuesBinding                   = @"selectedValues";
+CPSelectionIndexesBinding                 = @"selectionIndexes";
+CPTitleBinding                            = @"title";
+CPValueBinding                            = @"value";
+
+/*
+CPAlternateImageBinding                   = @"alternateImage";
+CPAlternateTitleBinding                   = @"alternateTitle";
+CPAnimateBinding                          = @"animate";
+CPAnimationDelayBinding                   = @"animationDelay";
+CPArgumentBinding                         = @"argument";
+CPAttributedStringBinding                 = @"attributedString";
+CPContentDictionaryBinding                = @"contentDictionary";
+CPContentHeightBinding                    = @"contentHeight";
+CPContentSetBinding                       = @"contentSet";
+CPContentWidthBinding                     = @"contentWidth";
+CPCriticalValueBinding                    = @"criticalValue";
+CPDataBinding                             = @"data";
+CPDisplayPatternTitleBinding              = @"displayPatternTitle";
+CPDisplayPatternValueBinding              = @"displayPatternValue";
+CPDocumentEditedBinding                   = @"documentEdited";
+CPDoubleClickArgumentBinding              = @"doubleClickArgument";
+CPDoubleClickTargetBinding                = @"doubleClickTarget";
+CPEditableBinding                         = @"editable";
+CPExcludedKeysBinding                     = @"excludedKeys";
+CPFontFamilyNameBinding                   = @"fontFamilyName";
+CPFontItalicBinding                       = @"fontItalic";
+CPFontSizeBinding                         = @"fontSize";
+CPHeaderTitleBinding                      = @"headerTitle";
+CPImageBinding                            = @"image";
+CPIncludedKeysBinding                     = @"includedKeys";
+CPInitialKeyBinding                       = @"initialKey";
+CPInitialValueBinding                     = @"initialValue";
+CPIsIndeterminateBinding                  = @"isIndeterminate";
+CPLabelBinding                            = @"label";
+CPLocalizedKeyDictionaryBinding           = @"localizedKeyDictionary";
+CPManagedObjectContextBinding             = @"managedObjectContext";
+CPMaximumRecentsBinding                   = @"maximumRecents";
+CPMaxValueBinding                         = @"maxValue";
+CPMaxWidthBinding                         = @"maxWidth";
+CPMinValueBinding                         = @"minValue";
+CPMinWidthBinding                         = @"minWidth";
+CPMixedStateImageBinding                  = @"mixedStateImage";
+CPOffStateImageBinding                    = @"offStateImage";
+CPOnStateImageBinding                     = @"onStateImage";
+CPRecentSearchesBinding                   = @"recentSearches";
+CPRepresentedFilenameBinding              = @"representedFilename";
+CPRowHeightBinding                        = @"rowHeight";
+CPSelectedIdentifierBinding               = @"selectedIdentifier";
+CPSelectionIndexPathsBinding              = @"selectionIndexPaths";
+CPSortDescriptorsBinding                  = @"sortDescriptors";
+CPTargetBinding                           = @"target";
+CPTextColorBinding                        = @"textColor";
+CPToolTipBinding                          = @"toolTip";
+CPTransparentBinding                      = @"transparent";
+CPValuePathBinding                        = @"valuePath";
+CPValueURLBinding                         = @"valueURL";
+CPVisibleBinding                          = @"visible";
+CPWarningValueBinding                     = @"warningValue";
+CPWidthBinding                            = @"width";
+CPContentArrayForMultipleSelectionBinding = @"contentArrayForMultipleSelection";
+*/
 
 //Binding options constants
 CPAllowsEditingMultipleValuesSelectionBindingOption = @"CPAllowsEditingMultipleValuesSelectionBindingOption";
