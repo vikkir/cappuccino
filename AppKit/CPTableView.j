@@ -279,8 +279,6 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
         _currentHighlightedTableColumn = nil;
 
-        _sortDescriptors = [];
-
         _draggedRowIndexes = [CPIndexSet indexSet];
         _verticalMotionCanDrag = YES;
         _isSelectingSession = NO;
@@ -351,6 +349,9 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     _sourceListInactiveBottomLineColor = [CPColor colorWithCalibratedRed:(150.0/255.0) green:(161.0/255.0) blue:(183.0/255.0) alpha:1.0];*/
     _differedColumnDataToRemove = [];
     _implementsCustomDrawRow = [self implementsSelector:@selector(drawRow:clipRect:)];
+
+    if (!_sortDescriptors)
+        _sortDescriptors = [];
 }
 
 /*!
@@ -372,15 +373,9 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
     if ([_dataSource respondsToSelector:@selector(numberOfRowsInTableView:)])
         _implementedDataSourceMethods |= CPTableViewDataSource_numberOfRowsInTableView_;
-    else if (!hasContentBinding)
-        [CPException raise:CPInternalInconsistencyException
-                reason:[aDataSource description] + " does not implement numberOfRowsInTableView:."];
 
     if ([_dataSource respondsToSelector:@selector(tableView:objectValueForTableColumn:row:)])
         _implementedDataSourceMethods |= CPTableViewDataSource_tableView_objectValueForTableColumn_row_;
-    else if (!hasContentBinding)
-        [CPException raise:CPInternalInconsistencyException
-                reason:[aDataSource description] + " does not implement tableView:objectValueForTableColumn:row:"];
 
     if ([_dataSource respondsToSelector:@selector(tableView:setObjectValue:forTableColumn:row:)])
         _implementedDataSourceMethods |= CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_;
@@ -1149,10 +1144,13 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
         _numberOfRows = [[destination valueForKeyPath:keyPath] count];
     }
-    else if (_dataSource)
+    else if (_dataSource && (_implementedDataSourceMethods & CPTableViewDataSource_numberOfRowsInTableView_))
         _numberOfRows = [_dataSource numberOfRowsInTableView:self];
     else
+    {
+        CPLog(@"no content binding established and data source " + [_dataSource description] + " does not implement numberOfRowsInTableView:");
         _numberOfRows = 0;
+    }
 
     return _numberOfRows;
 }
@@ -1497,8 +1495,6 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         topInset = FLOOR(_intercellSpacing.height / 2.0);
 
     return _CGRectMake(tableColumnRange.location + leftInset,  _CGRectGetMinY(rectOfRow) + topInset, tableColumnRange.length - _intercellSpacing.width, _CGRectGetHeight(rectOfRow) - _intercellSpacing.height);
-
-
 }
 
 - (void)resizeWithOldSuperviewSize:(CGSize)aSize
@@ -2389,10 +2385,17 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     var objectValue = tableColumnObjectValues[aRowIndex];
 
     // tableView:objectValueForTableColumn:row: is optional if content bindings are in place.
-    if (objectValue === undefined && (_implementedDataSourceMethods & CPTableViewDataSource_tableView_objectValueForTableColumn_row_))
+    if (objectValue === undefined)
     {
-        objectValue = [_dataSource tableView:self objectValueForTableColumn:aTableColumn row:aRowIndex];
-        tableColumnObjectValues[aRowIndex] = objectValue;
+        if (_implementedDataSourceMethods & CPTableViewDataSource_tableView_objectValueForTableColumn_row_)
+        {
+            objectValue = [_dataSource tableView:self objectValueForTableColumn:aTableColumn row:aRowIndex];
+            tableColumnObjectValues[aRowIndex] = objectValue;
+        }
+        else if (![self infoForBinding:@"content"])
+        {
+            CPLog(@"no content binding established and data source " + [_dataSource description] + " does not implement tableView:objectValueForTableColumn:row:");
+        }
     }
 
     return objectValue;
@@ -2404,7 +2407,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     {
         var superview = [self superview];
 
-        // FIXME: Should we be rect intersecting in case 
+        // FIXME: Should we be rect intersecting in case
         // there are multiple views in the clip view?
         if ([superview isKindOfClass:[CPClipView class]])
             _exposedRect = [superview bounds];
