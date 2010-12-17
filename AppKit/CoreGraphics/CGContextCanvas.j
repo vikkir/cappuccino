@@ -127,10 +127,7 @@ function CGContextAddPath(aContext, aPath)
                                                     break;
             case kCGPathElementCloseSubpath:        _CGContextClosePathCanvas(aContext);
                                                     break;
-            case kCGPathElementAddArc:              var startAngle = element.startAngle,
-                                                        radius = element.radius;
-            _CGContextMoveToPointCanvas(aContext, element.x + COS(startAngle)*radius, element.y + SIN(startAngle)*radius);
-                                                    _CGContextAddArcCanvas(aContext, element.x, element.y, element.radius, startAngle, element.endAngle, element.clockwise);
+            case kCGPathElementAddArc:              _CGContextAddArcCanvas(aContext, element.x, element.y, element.radius, element.startAngle, element.endAngle, element.clockwise);
                                                     break;
             case kCGPathElementAddArcTo:            //_CGContextAddArcToPointCanvas(aContext, element.cp1x, element.cp1.y, element.cp2.x, element.cp2y, element.radius);
                                                     break;
@@ -186,8 +183,6 @@ function CGContextDrawPath(aContext, aMode)
     
     if (aMode == kCGPathStroke || aMode == kCGPathFillStroke || aMode == kCGPathEOFillStroke)
         aContext.stroke();
-        
-    aContext.beginPath();
 }
 
 function CGContextFillRect(aContext, aRect)

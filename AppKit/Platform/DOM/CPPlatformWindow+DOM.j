@@ -658,8 +658,8 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
 - (void)keyEvent:(DOMEvent)aDOMEvent
 {
     var event,
-        timestamp =   new Date() /1000,
-        sourceElement = (aDOMEvent.target || aDOMEvent.srcElement),
+        timestamp = aDOMEvent.timeStamp || new Date(),
+        sourceElement = aDOMEvent.target || aDOMEvent.srcElement,
         windowNumber = [[CPApp keyWindow] windowNumber],
         modifierFlags = (aDOMEvent.shiftKey ? CPShiftKeyMask : 0) |
                         (aDOMEvent.ctrlKey ? CPControlKeyMask : 0) |
@@ -871,7 +871,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         var cut = aDOMEvent.type === "beforecut",
             keyCode = cut ? CPKeyCodes.X : CPKeyCodes.C,
             characters = cut ? "x" : "c",
-            timestamp =   new Date() /1000,
+            timestamp = aDOMEvent.timeStamp ? aDOMEvent.timeStamp : new Date(),
             windowNumber = [[CPApp keyWindow] windowNumber],
             modifierFlags = CPPlatformActionKeyMask;
 
@@ -1004,10 +1004,10 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     var deltaX = 0.0,
         deltaY = 0.0,
         windowNumber = 0,
-        timestamp =   new Date() /1000,
-        modifierFlags = (aDOMEvent.shiftKey ? CPShiftKeyMask : 0) | 
-                        (aDOMEvent.ctrlKey ? CPControlKeyMask : 0) | 
-                        (aDOMEvent.altKey ? CPAlternateKeyMask : 0) | 
+        timestamp = aDOMEvent.timeStamp ? aDOMEvent.timeStamp : new Date(),
+        modifierFlags = (aDOMEvent.shiftKey ? CPShiftKeyMask : 0) |
+                        (aDOMEvent.ctrlKey ? CPControlKeyMask : 0) |
+                        (aDOMEvent.altKey ? CPAlternateKeyMask : 0) |
                         (aDOMEvent.metaKey ? CPCommandKeyMask : 0);
 
     // Show the dom element
@@ -1174,7 +1174,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
 
     var event,
         location = _CGPointMake(aDOMEvent.clientX, aDOMEvent.clientY),
-        timestamp =   new Date() /1000,
+        timestamp = aDOMEvent.timeStamp ? aDOMEvent.timeStamp : new Date(),
         sourceElement = (aDOMEvent.target || aDOMEvent.srcElement),
         windowNumber = 0,
         modifierFlags = (aDOMEvent.shiftKey ? CPShiftKeyMask : 0) |
