@@ -658,7 +658,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
 - (void)keyEvent:(DOMEvent)aDOMEvent
 {
     var event,
-        timestamp = aDOMEvent.timeStamp || new Date(),
+        timestamp = new Date() / 1000,
         sourceElement = aDOMEvent.target || aDOMEvent.srcElement,
         windowNumber = [[CPApp keyWindow] windowNumber],
         modifierFlags = (aDOMEvent.shiftKey ? CPShiftKeyMask : 0) |
@@ -871,7 +871,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         var cut = aDOMEvent.type === "beforecut",
             keyCode = cut ? CPKeyCodes.X : CPKeyCodes.C,
             characters = cut ? "x" : "c",
-            timestamp = aDOMEvent.timeStamp ? aDOMEvent.timeStamp : new Date(),
+            timestamp =   new Date() /1000,
             windowNumber = [[CPApp keyWindow] windowNumber],
             modifierFlags = CPPlatformActionKeyMask;
 
@@ -1004,7 +1004,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     var deltaX = 0.0,
         deltaY = 0.0,
         windowNumber = 0,
-        timestamp = aDOMEvent.timeStamp ? aDOMEvent.timeStamp : new Date(),
+        timestamp = new Date() / 1000,
         modifierFlags = (aDOMEvent.shiftKey ? CPShiftKeyMask : 0) |
                         (aDOMEvent.ctrlKey ? CPControlKeyMask : 0) |
                         (aDOMEvent.altKey ? CPAlternateKeyMask : 0) |
@@ -1174,7 +1174,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
 
     var event,
         location = _CGPointMake(aDOMEvent.clientX, aDOMEvent.clientY),
-        timestamp = aDOMEvent.timeStamp ? aDOMEvent.timeStamp : new Date(),
+        timestamp =   new Date() /1000,
         sourceElement = (aDOMEvent.target || aDOMEvent.srcElement),
         windowNumber = 0,
         modifierFlags = (aDOMEvent.shiftKey ? CPShiftKeyMask : 0) |
