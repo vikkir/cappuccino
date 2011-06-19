@@ -66,15 +66,18 @@ var FILE = require("file"),
 
 - (void)prepare_xCodeProject
 {
-    m_xCodeProjectURL = new CFURL(".xCodeSupport", m_URL.asDirectoryPathURL());
+    var xCodeProjectDir = new CFURL("/tmp/"),
+        projectName = [self projectName];    
+    //var uuid = "" + OS.system("md5 -qs '" + m_URL.string() + "'");
+    
+    m_xCodeProjectURL = new CFURL([self projectName], xCodeProjectDir.asDirectoryPathURL());
 
     if (FILE.exists(m_xCodeProjectURL))
         FILE.rmtree(m_xCodeProjectURL);
 
     FILE.mkdir(m_xCodeProjectURL);
 
-    var projectName = [self projectName],
-        xCodeProjectTemplateURL = [self xCodeProjectTemplateURL];
+    var xCodeProjectTemplateURL = [self xCodeProjectTemplateURL];
 
     m_xCodeProjectFileURL = new CFURL(projectName + ".xcodeproj", m_xCodeProjectURL.asDirectoryPathURL());
 
@@ -84,7 +87,7 @@ var FILE = require("file"),
         pbxproj = FILE.read(pbxprojURL, { charset:"UTF-8" });
 
     pbxproj = pbxproj.replace(/\$\{CappuccinoProjectName\}/g, projectName);
-    pbxproj = pbxproj.replace(/\$\{CappuccinoProjectRelativePath\}/g, FILE.join("..", "..", projectName));
+    pbxproj = pbxproj.replace(/\$\{CappuccinoProjectRelativePath\}/g, FILE.join("..", "..", m_URL));
 
     FILE.write(pbxprojURL, pbxproj, { charset:"UTF-8" });
 
@@ -101,11 +104,7 @@ var FILE = require("file"),
 
 - (CPURL)shadowURLForSourceURL:(CPURL)aSourceURL
 {
-    var flattenedPath = (aSourceURL + "").replace(new RegExp("\/", "g"), "_"),
-        extension = FILE.extension(flattenedPath),
-        basename = flattenedPath.substr(0, flattenedPath.length - extension.length) + ".h";
-
-    return new CFURL(basename, m_xCodeSupportSourcesURL.asDirectoryPathURL());
+    return new CFURL("Header.h", m_xCodeSupportSourcesURL.asDirectoryPathURL());
 }
 
 - (void)updateSourceFiles
